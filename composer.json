@@ -1,0 +1,31 @@
+{
+    "name": "abs/common-coupon-pkg",
+    "description": "For Coupon CRUD",
+    "type": "library",
+    "require":
+    {},
+    "require-dev":
+    {},
+    "authors": [
+    {
+        "name": "Abdul",
+        "email": "abdulpro@gmail.com"
+    }],
+    "minimum-stability": "dev",
+    "extra":
+    {
+        "laravel":
+        {
+            "providers": [
+                "Abs\\CommonCouponPkg\\CommonCouponPkgServiceProvider"
+            ]
+        }
+    },
+    "autoload":
+    {
+        "psr-4":
+        {
+            "Abs\\CommonCouponPkg\\": "src/"
+        }
+    }
+}
