@@ -14,8 +14,9 @@ class Coupon extends Model {
 	protected $table = 'coupons';
 	public $timestamps = true;
 	protected $fillable = [
-		'question',
-		'answer',
+		'code',
+		'discount_percentage',
+		'type_id',
 	];
 
 	public static function createFromObject($record_data) {

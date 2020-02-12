@@ -21,8 +21,6 @@ app.component('couponList', {
         $scope.loading = true;
         var self = this;
         self.hasPermission = HelperService.hasPermission;
-        var table_scroll;
-        table_scroll = $('.page-main-content').height() - 37;
         var dataTable = $('#coupons_list').DataTable({
             "dom": dom_structure,
             "language": {
@@ -46,7 +44,9 @@ app.component('couponList', {
             },
             columns: [
                 { data: 'action', searchable: false, class: 'action' },
-                { data: 'question', name: 'coupons.question', searchable: true },
+                { data: 'code', name: 'coupons.code', searchable: true },
+                { data: 'discount_percentage', name: 'coupons.discount_percentage', searchable: false },
+                { data: 'type', name: 'configs.name', searchable: true },
             ],
             "infoCallback": function(settings, start, end, max, total, pre) {
                 $('#table_info').html(total + '/' + max)
@@ -76,18 +76,6 @@ app.component('couponList', {
             $('#coupons_list').DataTable().ajax.reload();
         });
 
-        $('.dataTables_length select').select2();
-
-        $scope.clear_search = function() {
-            $('#search_coupon').val('');
-            $('#coupons_list').DataTable().search('').draw();
-        }
-
-        var dataTables = $('#coupons_list').dataTable();
-        $("#search_coupon").keyup(function() {
-            dataTables.fnFilter(this.value);
-        });
-
         //DELETE
         $scope.deleteCoupon = function($id) {
             $('#coupon_id').val($id);
@@ -95,25 +83,24 @@ app.component('couponList', {
         $scope.deleteConfirm = function() {
             $id = $('#coupon_id').val();
             $http.get(
-                coupon_delete_data_url + '/' + $id,
+                laravel_routes['deleteCoupon'], {
+                    params: {
+                        id: $id,
+                    }
+                }
             ).then(function(response) {
-                if (response.data.success) {
-                    $noty = new Noty({
-                        type: 'success',
-                        layout: 'topRight',
-                        text: 'Coupon Deleted Successfully',
-                    }).show();
-                    setTimeout(function() {
-                        $noty.close();
-                    }, 3000);
-                    $('#coupons_list').DataTable().ajax.reload(function(json) {});
-                    $location.path('/common-coupon-pkg/coupon/list');
+                if (response.data.success == true) {
+                    custom_noty('success', response.data.message);
+                    $('#coupons_list').DataTable().ajax.reload();
+                    $scope.$apply();
+                } else {
+                    custom_noty('error', response.data.errors);
                 }
             });
         }
 
         //FOR FILTER
-        $('#coupon_code').on('keyup', function() {
+        /*$('#coupon_code').on('keyup', function() {
             dataTables.fnFilter();
         });
         $('#coupon_name').on('keyup', function() {
@@ -131,7 +118,7 @@ app.component('couponList', {
             $("#mobile_no").val('');
             $("#email").val('');
             dataTables.fnFilter();
-        }
+        }*/
 
         $rootScope.loading = false;
     }
@@ -141,7 +128,6 @@ app.component('couponList', {
 app.component('couponForm', {
     templateUrl: coupon_form_template_url,
     controller: function($http, $location, HelperService, $scope, $routeParams, $rootScope) {
-        get_form_data_url = typeof($routeParams.id) == 'undefined' ? laravel_routes['getCouponFormData'] : laravel_routes['getCouponFormData'] + '/' + $routeParams.id;
         var self = this;
         self.hasPermission = HelperService.hasPermission;
         self.angular_routes = angular_routes;
@@ -151,9 +137,11 @@ app.component('couponForm', {
             params: {
                 'id': typeof($routeParams.id) == 'undefined' ? null : $routeParams.id,
             }
-        }).then(function(response) {
+        }).then(function(response) { console.log(response.data);
             self.coupon = response.data.coupon;
+            self.extras = response.data.extras;
             self.action = response.data.action;
+            self.theme = response.data.theme;
             $rootScope.loading = false;
             if (self.action == 'Edit') {
                 if (self.coupon.deleted_at) {
@@ -170,19 +158,18 @@ app.component('couponForm', {
         var v = jQuery(form_id).validate({
             ignore: '',
             rules: {
-                'question': {
+                'code': {
                     required: true,
                     minlength: 3,
-                    maxlength: 255,
+                    maxlength: 191,
                 },
-                'answer': {
+                'discount_percentage': {
                     required: true,
-                    minlength: 3,
-                    maxlength: 255,
+                    number: true,
                 },
-            },
-            invalidHandler: function(event, validator) {
-                checkAllTabNoty()
+                'type_id': {
+                    required: true,
+                },
             },
             submitHandler: function(form) {
                 let formData = new FormData($(form_id)[0]);
@@ -202,7 +189,11 @@ app.component('couponForm', {
                         } else {
                             if (!res.success == true) {
                                 $('#submit').button('reset');
-                                showErrorNoty(res)
+                                var errors = '';
+                                for (var i in res.errors) {
+                                    errors += '<li>' + res.errors[i] + '</li>';
+                                }
+                                custom_noty('error', errors);
                             } else {
                                 $('#submit').button('reset');
                                 $location.path('/common-coupon-pkg/coupon/list');
@@ -212,7 +203,7 @@ app.component('couponForm', {
                     })
                     .fail(function(xhr) {
                         $('#submit').button('reset');
-                        showServerErrorNoty()
+                        custom_noty('error', 'Something went wrong at server')
                     });
             }
         });

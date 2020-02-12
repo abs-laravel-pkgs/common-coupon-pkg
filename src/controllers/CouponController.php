@@ -1,6 +1,7 @@
 <?php
 
 namespace Abs\CommonCouponPkg;
+use Abs\Basic\Config;
 use Abs\CommonCouponPkg\Coupon;
 use App\Http\Controllers\Controller;
 use Auth;
@@ -36,35 +37,33 @@ class CouponController extends Controller {
 
 	public function getCouponList(Request $request) {
 		$coupons = Coupon::withTrashed()
+			->leftJoin('configs', 'configs.id', 'coupons.type_id')
 			->select([
-				'coupons.id',
-				'coupons.question',
-				DB::raw('coupons.deleted_at as status'),
+				'coupons.*',
+				'configs.name as type',
+				DB::raw('IF(coupons.deleted_at IS NULL, "Active","Inactive") as status'),
 			])
 			->where('coupons.company_id', Auth::user()->company_id)
-			->where(function ($query) use ($request) {
+		/*->where(function ($query) use ($request) {
 				if (!empty($request->question)) {
 					$query->where('coupons.question', 'LIKE', '%' . $request->question . '%');
 				}
-			})
+			})*/
 			->orderby('coupons.id', 'desc');
 
 		return Datatables::of($coupons)
-			->addColumn('question', function ($coupon) {
-				$status = $coupon->status ? 'green' : 'red';
-				return '<span class="status-indicator ' . $status . '"></span>' . $coupon->question;
+			->addColumn('code', function ($coupons) {
+				$status = $coupons->status == "Active" ? 'green' : 'red';
+				return '<span class="status-indicator ' . $status . '"></span>' . $coupons->code;
 			})
-			->addColumn('action', function ($coupon) {
+			->addColumn('action', function ($coupons) {
 				$img1 = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow.svg');
 				$img1_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/edit-yellow-active.svg');
-				$img2 = asset('public/themes/' . $this->data['theme'] . '/img/content/table/eye.svg');
-				$img2_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/eye-active.svg');
 				$img_delete = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-default.svg');
 				$img_delete_active = asset('public/themes/' . $this->data['theme'] . '/img/content/table/delete-active.svg');
 				$output = '';
-				$output .= '<a href="#!/common-coupon-pkg/coupon/edit/' . $coupon->id . '" id = "" ><img src="' . $img1 . '" alt="Edit" class="img-responsive" onmouseover=this.src="' . $img1_active . '" onmouseout=this.src="' . $img1 . '"></a>
-					<a href="#!/common-coupon-pkg/coupon/view/' . $coupon->id . '" id = "" ><img src="' . $img2 . '" alt="View" class="img-responsive" onmouseover=this.src="' . $img2_active . '" onmouseout=this.src="' . $img2 . '"></a>
-					<a href="javascript:;"  data-toggle="modal" data-target="#coupon-delete-modal" onclick="angular.element(this).scope().deleteCouponconfirm(' . $coupon->id . ')" title="Delete"><img src="' . $img_delete . '" alt="Delete" class="img-responsive delete" onmouseover=this.src="' . $img_delete_active . '" onmouseout=this.src="' . $img_delete . '"></a>
+				$output .= '<a href="#!/common-coupon-pkg/coupon/edit/' . $coupons->id . '" id = "" ><img src="' . $img1 . '" alt="Edit" class="img-responsive" onmouseover=this.src="' . $img1_active . '" onmouseout=this.src="' . $img1 . '"></a>
+					<a href="javascript:;"  data-toggle="modal" data-target="#coupon-delete-modal" onclick="angular.element(this).scope().deleteCoupon(' . $coupons->id . ')" title="Delete"><img src="' . $img_delete . '" alt="Delete" class="img-responsive delete" onmouseover=this.src="' . $img_delete_active . '" onmouseout=this.src="' . $img_delete . '"></a>
 					';
 				return $output;
 			})
@@ -81,7 +80,11 @@ class CouponController extends Controller {
 			$action = 'Edit';
 		}
 		$this->data['coupon'] = $coupon;
+		$this->data['extras'] = [
+			'type_list' => collect(Config::where('config_type_id', 7)->select('id', 'name')->get())->prepend(['name' => 'Select Type', 'id' => '']),
+		];
 		$this->data['action'] = $action;
+		$this->data['theme'];
 
 		return response()->json($this->data);
 	}
@@ -91,21 +94,18 @@ class CouponController extends Controller {
 		try {
 			$error_messages = [
 				'code.required' => 'Coupon Code is Required',
-				'code.max' => 'Maximum 255 Characters',
-				'code.min' => 'Minimum 3 Characters',
-				'code.unique' => 'Coupon Code is already taken',
-				'name.required' => 'Coupon Name is Required',
-				'name.max' => 'Maximum 255 Characters',
-				'name.min' => 'Minimum 3 Characters',
+				// 'code.unique' => 'Coupon Code is already taken',
+				'discount_percentage.required' => 'Discount Value is Required',
+				'type_id.required' => 'Type is Required',
 			];
 			$validator = Validator::make($request->all(), [
-				'question' => [
+				/*'code' => [
 					'required:true',
-					'max:255',
-					'min:3',
-					'unique:coupons,question,' . $request->id . ',id,company_id,' . Auth::user()->company_id,
-				],
-				'answer' => 'required|max:255|min:3',
+					'unique:coupons,code,' . $request->id . ',id,company_id,' . Auth::user()->company_id,
+				],*/
+				'code' => 'required',
+				'discount_percentage' => 'required',
+				'type_id' => 'required',
 			], $error_messages);
 			if ($validator->fails()) {
 				return response()->json(['success' => false, 'errors' => $validator->errors()->all()]);
@@ -137,12 +137,12 @@ class CouponController extends Controller {
 			if (!($request->id)) {
 				return response()->json([
 					'success' => true,
-					'message' => 'FAQ Added Successfully',
+					'message' => 'Coupon Added Successfully',
 				]);
 			} else {
 				return response()->json([
 					'success' => true,
-					'message' => 'FAQ Updated Successfully',
+					'message' => 'Coupon Updated Successfully',
 				]);
 			}
 		} catch (Exceprion $e) {
@@ -154,8 +154,16 @@ class CouponController extends Controller {
 		}
 	}
 
-	public function deleteCoupon($id) {
-		$delete_status = Coupon::withTrashed()->where('id', $id)->forceDelete();
-		return response()->json(['success' => true]);
+	public function deleteCoupon(Request $request) {
+		DB::beginTransaction();
+		try {
+			Coupon::withTrashed()->where('id', $request->id)->forceDelete();
+
+			DB::commit();
+			return response()->json(['success' => true, 'message' => 'Coupon Deleted Successfully']);
+		} catch (Exception $e) {
+			DB::rollBack();
+			return response()->json(['success' => false, 'errors' => ['Exception Error' => $e->getMessage()]]);
+		}
 	}
 }

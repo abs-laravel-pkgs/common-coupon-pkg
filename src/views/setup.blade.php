@@ -1,4 +1,4 @@
-@if(config('COMMON_COUPON_PKG.DEV'))
+@if(config('common-coupon-pkg.DEV'))
     <?php $common_coupon_pkg_prefix = '/packages/abs/common-coupon-pkg/src';?>
 @else
     <?php $common_coupon_pkg_prefix = '';?>

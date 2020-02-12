@@ -8,7 +8,7 @@
                         <div class="page-header-inner page-title display-inline-block">
                             <div class="previous-page">
                                 <a href="#!/common-coupon-pkg/coupon/list">
-                                    <img src="./public/img/content/previous.svg" class="img-responsive">
+                                    <img src="./public/themes/{{$ctrl.theme}}/img/content/previous.svg" class="img-responsive">
                                 </a>
                             </div>
                         </div><!-- Page Header Inner -->
@@ -56,23 +56,42 @@
                                                     <div class="col-md-3">
                                                         <div class="form-group">
                                                             <label>
-                                                                Question
+                                                                Code
                                                                 <span class="mandatory">
                                                                     *
                                                                 </span>
                                                             </label>
-                                                            <textarea name="question" ng-model='$ctrl.coupon.question' class="form-control required" placeholder="Enter Question"></textarea>
+                                                            <input type="text" name="code" ng-model='$ctrl.coupon.code' class="form-control required" placeholder="Enter Code" minlength="3" maxlength="191">
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
                                                             <label>
-                                                                Answer
+                                                                Discount Value
                                                                 <span class="mandatory">
                                                                     *
                                                                 </span>
                                                             </label>
-                                                            <textarea name="answer" ng-model='$ctrl.coupon.answer' class="form-control required" placeholder="Enter Answer"></textarea>
+                                                            <input type="text" name="discount_percentage" ng-model='$ctrl.coupon.discount_percentage' class="form-control required" placeholder="Enter Discount Value" oninput="this.value = this.value.replace(/[^\d.]/g, '').replace(/(^[\d]{3})[\d]/g, '$1').replace(/(\..*)\./g, '$1').replace(/(\.[\d]{2})./g, '$1');">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>
+                                                                Type
+                                                                <span class="mandatory">
+                                                                    *
+                                                                </span>
+                                                            </label>
+                                                            <md-select ng-model="$ctrl.coupon.type_id" md-on-close="clearSearchTerm()" data-md-container-class="selectdemoSelectHeader" placeholder="Select Type">
+                                                                <md-select-header class="demo-select-header">
+                                                                    <input ng-model="searchTerm" type="search" placeholder="Search for a Type" class="demo-header-searchbox md-text">
+                                                                </md-select-header>
+                                                                <md-optgroup>
+                                                                    <md-option ng-value="i.id" ng-repeat="i in $ctrl.extras.type_list | filter:searchTerm">{{i.name}}</md-option>
+                                                                </md-optgroup>
+                                                            </md-select>
+                                                            <input type="hidden" class="form-control required" name="type_id" value="{{$ctrl.coupon.type_id}}">
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
