@@ -94,16 +94,15 @@ class CouponController extends Controller {
 		try {
 			$error_messages = [
 				'code.required' => 'Coupon Code is Required',
-				// 'code.unique' => 'Coupon Code is already taken',
+				'code.unique' => 'Coupon Code is already taken',
 				'discount_percentage.required' => 'Discount Value is Required',
 				'type_id.required' => 'Type is Required',
 			];
 			$validator = Validator::make($request->all(), [
-				/*'code' => [
+				'code' => [
 					'required:true',
 					'unique:coupons,code,' . $request->id . ',id,company_id,' . Auth::user()->company_id,
-				],*/
-				'code' => 'required',
+				],
 				'discount_percentage' => 'required',
 				'type_id' => 'required',
 			], $error_messages);
