@@ -1,7 +1,7 @@
 <?php
 
 namespace Abs\CommonCouponPkg;
-use Abs\Basic\Config;
+use Abs\BasicPkg\Config;
 use Abs\CommonCouponPkg\Coupon;
 use App\Http\Controllers\Controller;
 use Auth;
