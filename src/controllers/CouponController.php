@@ -1,7 +1,7 @@
 <?php
 
 namespace Abs\CommonCouponPkg;
-use Abs\BasicPkg\Config;
+use App\Config;
 use Abs\CommonCouponPkg\Coupon;
 use App\Http\Controllers\Controller;
 use Auth;
@@ -13,7 +13,7 @@ use Yajra\Datatables\Datatables;
 
 class CouponController extends Controller {
 
-	private $company_id;
+	public $company_id;
 	public function __construct() {
 		$this->data['theme'] = config('custom.admin_theme');
 		$this->company_id = config('custom.company_id');
